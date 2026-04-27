@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/btcsuite/websocket"
@@ -80,9 +81,7 @@ func registerLoggerWsRoute(ws *gin.Engine, serializer marshal.Marshalizer) {
 	upgrader := websocket.Upgrader{}
 
 	ws.GET("/log", func(c *gin.Context) {
-		upgrader.CheckOrigin = func(r *http.Request) bool {
-			return true
-		}
+		upgrader.CheckOrigin = isAllowedWebSocketOrigin
 
 		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
@@ -177,8 +176,13 @@ func (ep *endpointsProcessor) generateBlocksUntilEpochReached(c *gin.Context) {
 func (ep *endpointsProcessor) generateBlocksUntilTransactionProcessed(c *gin.Context) {
 	txHashStr := c.Param("txHash")
 
-	maxNumBlocks := getMaxNumBlocksToGenerate(c)
-	err := ep.facade.GenerateBlocksUntilTransactionIsProcessed(txHashStr, maxNumBlocks)
+	maxNumBlocks, err := getMaxNumBlocksToGenerate(c)
+	if err != nil {
+		shared.RespondWithBadRequest(c, err.Error())
+		return
+	}
+
+	err = ep.facade.GenerateBlocksUntilTransactionIsProcessed(txHashStr, maxNumBlocks)
 	if err != nil {
 		shared.RespondWithInternalError(c, errors.New("cannot generate blocks"), err)
 		return
@@ -235,18 +239,38 @@ func getQueryParamNoGenerate(c *gin.Context) (bool, error) {
 	return strconv.ParseBool(withResultsStr)
 }
 
-func getMaxNumBlocksToGenerate(c *gin.Context) int {
+func getMaxNumBlocksToGenerate(c *gin.Context) (int, error) {
 	withResultsStr := c.Request.URL.Query().Get(queryParamMaxNumBlocks)
 	if withResultsStr == "" {
-		return maxNumOfBlockToGenerateUntilTxProcessed
+		return maxNumOfBlockToGenerateUntilTxProcessed, nil
 	}
 
 	value, err := strconv.Atoi(withResultsStr)
 	if err != nil {
-		return maxNumOfBlockToGenerateUntilTxProcessed
+		return 0, fmt.Errorf("invalid %s value", queryParamMaxNumBlocks)
+	}
+	if value <= 0 {
+		return 0, fmt.Errorf("%s must be positive", queryParamMaxNumBlocks)
+	}
+	if value > maxNumOfBlockToGenerateUntilTxProcessed {
+		return 0, fmt.Errorf("%s must be at most %d", queryParamMaxNumBlocks, maxNumOfBlockToGenerateUntilTxProcessed)
 	}
 
-	return value
+	return value, nil
+}
+
+func isAllowedWebSocketOrigin(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return true
+	}
+
+	parsedOrigin, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+
+	return parsedOrigin.Host == r.Host
 }
 
 func (ep *endpointsProcessor) setStateMultiple(c *gin.Context) {

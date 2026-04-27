@@ -97,9 +97,11 @@ func TestConfigsFetcher(t *testing.T) {
 	})
 	t.Run("FetchProxyConfigs should work", func(t *testing.T) {
 		dir := path.Join(t.TempDir(), "shouldWorkTest")
+		var cloneDestination string
 		cf, _ := NewConfigsFetcher(mxNodeRepo, mxProxyRepo, &testscommon.GitFetcherStub{
 			CloneCalled: func(r, d string) error {
-				err := os.MkdirAll(path.Join(os.TempDir(), "repo/cmd/proxy/config"), os.ModePerm)
+				cloneDestination = d
+				err := os.MkdirAll(path.Join(d, "cmd/proxy/config"), os.ModePerm)
 				require.NoError(t, err)
 
 				return nil
@@ -119,6 +121,8 @@ func TestConfigsFetcher(t *testing.T) {
 			},
 		}, dir)
 		require.Nil(t, err)
+		_, err = os.Stat(cloneDestination)
+		require.True(t, os.IsNotExist(err))
 	})
 	t.Run("FetchNodeConfigs dir already exists should early exit", func(t *testing.T) {
 		cf, _ := NewConfigsFetcher(mxNodeRepo, mxProxyRepo, &testscommon.GitFetcherStub{
@@ -140,9 +144,11 @@ func TestConfigsFetcher(t *testing.T) {
 	})
 	t.Run("FetchNodeConfigs should work", func(t *testing.T) {
 		dir := path.Join(t.TempDir(), "shouldWorkTest")
+		var cloneDestination string
 		cf, _ := NewConfigsFetcher(mxNodeRepo, mxProxyRepo, &testscommon.GitFetcherStub{
 			CloneCalled: func(r, d string) error {
-				err := os.MkdirAll(path.Join(os.TempDir(), "repo/cmd/node/config"), os.ModePerm)
+				cloneDestination = d
+				err := os.MkdirAll(path.Join(d, "cmd/node/config"), os.ModePerm)
 				require.NoError(t, err)
 
 				return nil
@@ -162,5 +168,7 @@ func TestConfigsFetcher(t *testing.T) {
 			},
 		}, dir)
 		require.Nil(t, err)
+		_, err = os.Stat(cloneDestination)
+		require.True(t, os.IsNotExist(err))
 	})
 }

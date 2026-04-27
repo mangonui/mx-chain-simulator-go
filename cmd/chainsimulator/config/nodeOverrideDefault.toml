@@ -2,6 +2,17 @@
 OverridableConfigTomlValues = [
     { File = "systemSmartContractsConfig.toml", Path = "ESDTSystemSCConfig.BaseIssuingCost", Value = "50000000000000000" },  # (0.05 EGLD)
     { File = "config.toml", Path = "Debug.Process.Enabled", Value = false }, # disable process debugger component that might alter the log levels
+    # Enable DRWA for local chain-simulator integration runs. The authorized callers are
+    # dummy bootstrap values; the DRWA interactor overwrites the system-account records
+    # with the actual deployed contract addresses once the simulator is running.
+    { File = "config.toml", Path = "DRWA.Enabled", Value = true },
+    { File = "config.toml", Path = "DRWA.KeyManagementModel", Value = "multisig_3of5_contract" },
+    { File = "config.toml", Path = "DRWA.AuthorizedCallers.AuthAdmin", Value = "0x1111111111111111111111111111111111111111111111111111111111111111" },
+    { File = "config.toml", Path = "DRWA.AuthorizedCallers.PolicyRegistry", Value = "0x2222222222222222222222222222222222222222222222222222222222222222" },
+    { File = "config.toml", Path = "DRWA.AuthorizedCallers.AssetManager", Value = "0x3333333333333333333333333333333333333333333333333333333333333333" },
+    { File = "config.toml", Path = "DRWA.AuthorizedCallers.IdentityRegistry", Value = "0x4444444444444444444444444444444444444444444444444444444444444444" },
+    { File = "config.toml", Path = "DRWA.AuthorizedCallers.Attestation", Value = "0x5555555555555555555555555555555555555555555555555555555555555555" },
+    { File = "config.toml", Path = "DRWA.AuthorizedCallers.RecoveryAdmin", Value = "0x6666666666666666666666666666666666666666666666666666666666666666" },
     # the following 2 lines will set the VM 1.5 spaceVM version at the genesis time onward
     { File = "config.toml", Path = "VirtualMachine.Execution.WasmVMVersions", Value = [{ StartEpoch = 0, Version = "1.5" }]},
     { File = "config.toml", Path = "VirtualMachine.Querying.WasmVMVersions", Value = [{ StartEpoch = 0, Version = "1.5" }]},

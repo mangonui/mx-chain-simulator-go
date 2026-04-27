@@ -30,3 +30,7 @@ go.work
 # Python virtual env
 examples/venv/
 typings
+
+# Local simulator private test keys
+cmd/chainsimulator/config/node/config/testKeys/*.pem
+cmd/chainsimulator/config/node/config/testKeys/**/*.pem
