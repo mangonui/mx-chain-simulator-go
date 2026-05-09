@@ -366,6 +366,37 @@ func TestSimulatorFacade_ForceChangeOfEpoch_TargetEpochLowerThanCurrentEpoch(t *
 	require.True(t, strings.Contains(err.Error(), errMsgTargetEpochLowerThanCurrentEpoch))
 }
 
+func TestSimulatorFacade_ForceChangeOfEpoch_ExcessiveDeltaShouldErr(t *testing.T) {
+	t.Parallel()
+
+	simulator := &testscommon.SimulatorHandlerMock{
+		GetNodeHandlerCalled: func(shardID uint32) process.NodeHandler {
+			return getNodeHandlerWithCurrentEpoch(1)
+		},
+	}
+
+	facade, _ := NewSimulatorFacade(simulator, &testscommon.TransactionHandlerMock{})
+
+	err := facade.ForceChangeOfEpoch(maxEpochDelta + 2)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "target epoch delta exceeds maximum")
+}
+
+func TestSimulatorFacade_ForceChangeOfEpoch_NilNestedComponentShouldErr(t *testing.T) {
+	t.Parallel()
+
+	simulator := &testscommon.SimulatorHandlerMock{
+		GetNodeHandlerCalled: func(shardID uint32) process.NodeHandler {
+			return nil
+		},
+	}
+
+	facade, _ := NewSimulatorFacade(simulator, &testscommon.TransactionHandlerMock{})
+
+	err := facade.ForceChangeOfEpoch(5)
+	require.EqualError(t, err, "missing metachain node handler")
+}
+
 func TestSimulatorFacade_ForceChangeOfEpochError(t *testing.T) {
 	epoch := uint32(0)
 	expectedErr := errors.New("expected error")
@@ -398,6 +429,26 @@ func TestSimulatorFacade_ForceChangeOfEpoch(t *testing.T) {
 
 	err := facade.ForceChangeOfEpoch(5)
 	require.Nil(t, err)
+}
+
+func TestSimulatorFacade_AddValidatorKeysRejectsOversizedPayload(t *testing.T) {
+	t.Parallel()
+
+	facade, _ := NewSimulatorFacade(&testscommon.SimulatorHandlerMock{}, &testscommon.TransactionHandlerMock{})
+	keys := make([]string, maxValidatorKeys+1)
+
+	err := facade.AddValidatorKeys(&dtoc.ValidatorKeys{PrivateKeysBase64: keys})
+	require.EqualError(t, err, "invalid validator keys count")
+}
+
+func TestSimulatorFacade_SetStateMultipleRejectsOversizedPayload(t *testing.T) {
+	t.Parallel()
+
+	facade, _ := NewSimulatorFacade(&testscommon.SimulatorHandlerMock{}, &testscommon.TransactionHandlerMock{})
+	stateSlice := make([]*dtos.AddressState, 1025)
+
+	err := facade.SetStateMultiple(stateSlice, true)
+	require.EqualError(t, err, "too many state entries")
 }
 
 func getNodeHandlerWithCurrentEpoch(epoch uint32) process.NodeHandler {

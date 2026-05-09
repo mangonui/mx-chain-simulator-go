@@ -70,6 +70,17 @@ func TestGetMaxNumBlocksToGenerate(t *testing.T) {
 	}
 }
 
+func TestGetTargetEpochQueryParamAllowsCallerToRejectNegative(t *testing.T) {
+	t.Parallel()
+
+	context, _ := gin.CreateTestContext(httptest.NewRecorder())
+	context.Request = httptest.NewRequest(http.MethodPost, "/force?targetEpoch=-1", nil)
+
+	targetEpoch, err := getTargetEpochQueryParam(context)
+	require.NoError(t, err)
+	require.Equal(t, -1, targetEpoch)
+}
+
 func TestIsAllowedWebSocketOrigin(t *testing.T) {
 	t.Parallel()
 

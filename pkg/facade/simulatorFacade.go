@@ -17,8 +17,11 @@ import (
 )
 
 const (
-	errMsgTargetEpochLowerThanCurrentEpoch  = "target epoch must be greater than current epoch"
-	errMsgAccountNotFound                   = "account was not found")
+	errMsgTargetEpochLowerThanCurrentEpoch = "target epoch must be greater than current epoch"
+	errMsgAccountNotFound                  = "account was not found"
+	maxValidatorKeys                       = 400
+	maxEpochDelta                          = uint32(100)
+)
 
 var log = logger.GetOrCreate("simulator/facade")
 
@@ -64,6 +67,9 @@ func (sf *simulatorFacade) SetKeyValueForAddress(address string, keyValueMap map
 
 // SetStateMultiple will set the entire state for the provided addresses
 func (sf *simulatorFacade) SetStateMultiple(stateSlice []*dtos.AddressState, noGenerate bool) error {
+	if len(stateSlice) > 1024 {
+		return errors.New("too many state entries")
+	}
 	err := sf.simulator.SetStateMultiple(stateSlice)
 	if err != nil {
 		return err
@@ -78,6 +84,9 @@ func (sf *simulatorFacade) SetStateMultiple(stateSlice []*dtos.AddressState, noG
 
 // SetStateMultipleOverwrite will set the entire state for the provided address and cleanup the old state of the provided addresses
 func (sf *simulatorFacade) SetStateMultipleOverwrite(stateSlice []*dtos.AddressState, noGenerate bool) error {
+	if len(stateSlice) > 1024 {
+		return errors.New("too many state entries")
+	}
 	for _, state := range stateSlice {
 		// TODO MX-15414
 		err := sf.simulator.RemoveAccounts([]string{state.Address})
@@ -101,6 +110,9 @@ func (sf *simulatorFacade) SetStateMultipleOverwrite(stateSlice []*dtos.AddressS
 
 // AddValidatorKeys will add the validator keys in the multi key handler
 func (sf *simulatorFacade) AddValidatorKeys(validators *dtoc.ValidatorKeys) error {
+	if validators == nil || len(validators.PrivateKeysBase64) > maxValidatorKeys {
+		return errors.New("invalid validator keys count")
+	}
 	validatorsPrivateKeys := make([][]byte, 0, len(validators.PrivateKeysBase64))
 	for idx, privateKeyBase64 := range validators.PrivateKeysBase64 {
 		privateKeyHexBytes, err := base64.StdEncoding.DecodeString(privateKeyBase64)
@@ -135,9 +147,15 @@ func (sf *simulatorFacade) ForceChangeOfEpoch(targetEpoch uint32) error {
 		return sf.simulator.ForceChangeOfEpoch()
 	}
 
-	currentEpoch := sf.getCurrentEpoch()
+	currentEpoch, err := sf.getCurrentEpoch()
+	if err != nil {
+		return err
+	}
 	if currentEpoch >= targetEpoch {
 		return fmt.Errorf("%s, current epoch: %d target epoch: %d", errMsgTargetEpochLowerThanCurrentEpoch, currentEpoch, targetEpoch)
+	}
+	if targetEpoch-currentEpoch > maxEpochDelta {
+		return fmt.Errorf("target epoch delta exceeds maximum: %d", maxEpochDelta)
 	}
 
 	for currentEpoch < targetEpoch {
@@ -146,7 +164,10 @@ func (sf *simulatorFacade) ForceChangeOfEpoch(targetEpoch uint32) error {
 			return err
 		}
 
-		currentEpoch = sf.getCurrentEpoch()
+		currentEpoch, err = sf.getCurrentEpoch()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -198,8 +219,21 @@ func (sf *simulatorFacade) GenerateBlocksUntilTransactionIsProcessed(txHash stri
 	return errors.New("something went wrong, transaction is still in pending")
 }
 
-func (sf *simulatorFacade) getCurrentEpoch() uint32 {
-	return sf.simulator.GetNodeHandler(core.MetachainShardId).GetProcessComponents().EpochStartTrigger().Epoch()
+func (sf *simulatorFacade) getCurrentEpoch() (uint32, error) {
+	nodeHandler := sf.simulator.GetNodeHandler(core.MetachainShardId)
+	if check.IfNil(nodeHandler) {
+		return 0, errors.New("missing metachain node handler")
+	}
+	processComponents := nodeHandler.GetProcessComponents()
+	if check.IfNil(processComponents) {
+		return 0, errors.New("missing process components")
+	}
+	epochStartTrigger := processComponents.EpochStartTrigger()
+	if check.IfNil(epochStartTrigger) {
+		return 0, errors.New("missing epoch start trigger")
+	}
+
+	return epochStartTrigger.Epoch(), nil
 }
 
 // IsInterfaceNil returns true if there is no value under the interface

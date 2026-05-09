@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"sync/atomic"
 
 	"github.com/btcsuite/websocket"
 	"github.com/gin-gonic/gin"
@@ -38,7 +39,13 @@ const (
 	queryParamMaxNumBlocks = "maxNumBlocks"
 
 	maxNumOfBlockToGenerateUntilTxProcessed = 20
+	maxSimulatorRequestBodySize             = 10 << 20
+	maxStateEntries                         = 1024
+	maxValidatorKeys                        = 400
+	maxLogStreams                           = int32(64)
 )
+
+var activeLogStreams int32
 
 type endpointsProcessor struct {
 	facade SimulatorFacade
@@ -81,6 +88,13 @@ func registerLoggerWsRoute(ws *gin.Engine, serializer marshal.Marshalizer) {
 	upgrader := websocket.Upgrader{}
 
 	ws.GET("/log", func(c *gin.Context) {
+		if atomic.AddInt32(&activeLogStreams, 1) > maxLogStreams {
+			atomic.AddInt32(&activeLogStreams, -1)
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": "too many log streams"})
+			return
+		}
+		defer atomic.AddInt32(&activeLogStreams, -1)
+
 		upgrader.CheckOrigin = isAllowedWebSocketOrigin
 
 		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
@@ -103,6 +117,10 @@ func (ep *endpointsProcessor) forceEpochChange(c *gin.Context) {
 	targetEpoch, err := getTargetEpochQueryParam(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if targetEpoch < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "targetEpoch must not be negative"})
 		return
 	}
 
@@ -282,9 +300,16 @@ func (ep *endpointsProcessor) setStateMultiple(c *gin.Context) {
 		return
 	}
 
+	if !limitRequestBody(c) {
+		return
+	}
 	err = c.ShouldBindJSON(&stateSlice)
 	if err != nil {
 		shared.RespondWithBadRequest(c, fmt.Sprintf("invalid state structure, error: %s", err.Error()))
+		return
+	}
+	if len(stateSlice) > maxStateEntries {
+		shared.RespondWithBadRequest(c, "too many state entries")
 		return
 	}
 
@@ -305,9 +330,16 @@ func (ep *endpointsProcessor) setStateMultipleOverwrite(c *gin.Context) {
 	}
 
 	var stateSlice []*dtos.AddressState
+	if !limitRequestBody(c) {
+		return
+	}
 	err = c.ShouldBindJSON(&stateSlice)
 	if err != nil {
 		shared.RespondWithBadRequest(c, fmt.Sprintf("invalid state structure, error: %s", err.Error()))
+		return
+	}
+	if len(stateSlice) > maxStateEntries {
+		shared.RespondWithBadRequest(c, "too many state entries")
 		return
 	}
 
@@ -323,9 +355,16 @@ func (ep *endpointsProcessor) setStateMultipleOverwrite(c *gin.Context) {
 func (ep *endpointsProcessor) addValidatorKeys(c *gin.Context) {
 	validatorsKeys := &dtosc.ValidatorKeys{}
 
+	if !limitRequestBody(c) {
+		return
+	}
 	err := c.ShouldBindJSON(validatorsKeys)
 	if err != nil {
 		shared.RespondWithBadRequest(c, fmt.Sprintf("invalid validators keys structure, error: %s", err.Error()))
+		return
+	}
+	if len(validatorsKeys.PrivateKeysBase64) > maxValidatorKeys {
+		shared.RespondWithBadRequest(c, "too many validator keys")
 		return
 	}
 
@@ -336,6 +375,16 @@ func (ep *endpointsProcessor) addValidatorKeys(c *gin.Context) {
 	}
 
 	shared.RespondWith(c, http.StatusOK, gin.H{}, "", data.ReturnCodeSuccess)
+}
+
+func limitRequestBody(c *gin.Context) bool {
+	if c.Request.ContentLength > maxSimulatorRequestBodySize {
+		shared.RespondWithBadRequest(c, "request body too large")
+		return false
+	}
+
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxSimulatorRequestBodySize)
+	return true
 }
 
 func (ep *endpointsProcessor) forceUpdateValidatorStatistics(c *gin.Context) {
