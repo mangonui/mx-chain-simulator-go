@@ -1,11 +1,13 @@
 module github.com/multiversx/mx-chain-simulator-go
 
-go 1.23
+go 1.23.0
+
+toolchain go1.23.6
 
 require (
 	github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792
 	github.com/gin-gonic/gin v1.10.0
-	github.com/multiversx/mx-chain-core-go v1.4.1
+	github.com/multiversx/mx-chain-core-go v1.5.0
 	github.com/multiversx/mx-chain-go v1.11.1
 	github.com/multiversx/mx-chain-logger-go v1.1.0
 	github.com/multiversx/mx-chain-proxy-go v1.3.1
@@ -118,12 +120,12 @@ require (
 	github.com/multiformats/go-multistream v0.6.0 // indirect
 	github.com/multiformats/go-varint v0.0.7 // indirect
 	github.com/multiversx/concurrent-map v0.1.4 // indirect
-	github.com/multiversx/mx-chain-communication-go v1.3.0 // indirect
-	github.com/multiversx/mx-chain-crypto-go v1.3.0 // indirect
-	github.com/multiversx/mx-chain-es-indexer-go v1.9.2 // indirect
+	github.com/multiversx/mx-chain-communication-go v1.3.1 // indirect
+	github.com/multiversx/mx-chain-crypto-go v1.3.1-0.20260130144701-dfa5fd3ea5d7 // indirect
+	github.com/multiversx/mx-chain-es-indexer-go v1.9.4-0.20260219114236-37624897dc3a // indirect
 	github.com/multiversx/mx-chain-scenario-go v1.6.0 // indirect
 	github.com/multiversx/mx-chain-storage-go v1.1.0 // indirect
-	github.com/multiversx/mx-chain-vm-common-go v1.6.0 // indirect
+	github.com/multiversx/mx-chain-vm-common-go v1.6.1 // indirect
 	github.com/multiversx/mx-chain-vm-go v1.6.1-0.20250707105646-d7048a2657c2 // indirect
 	github.com/multiversx/mx-chain-vm-v1_2-go v1.2.69 // indirect
 	github.com/multiversx/mx-chain-vm-v1_3-go v1.3.70 // indirect
@@ -189,13 +191,13 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/arch v0.8.0 // indirect
-	golang.org/x/crypto v0.32.0 // indirect
+	golang.org/x/crypto v0.35.0 // indirect
 	golang.org/x/exp v0.0.0-20250128182459-e0ece0dbea4c // indirect
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/net v0.34.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/tools v0.29.0 // indirect
 	gonum.org/v1/gonum v0.15.1 // indirect
 	google.golang.org/protobuf v1.36.4 // indirect
@@ -203,3 +205,34 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/blake3 v1.3.0 // indirect
 )
+
+// Local working-copy replace so the simulator sees the proxy's new
+// CorsConfig type before that proxy commit is published to mangonui.
+// Once the proxy commit is pushed we will replace this with a
+// pseudo-version pin pointing at the mangonui SHA.
+replace github.com/multiversx/mx-chain-proxy-go => ../mx-chain-proxy-go
+
+// Pin every transitive multiversx dep to the mangonui audit-fix
+// branches so the entire build aligns on the DRWA-aware fork. The
+// proxy imports github.com/multiversx/mx-chain-core-go/data/drwa
+// which only exists on mangonui; mx-chain-go's API shape must match
+// the core-go it consumes; both must therefore come from mangonui.
+replace github.com/multiversx/mx-chain-core-go => ../NewArc/Fixes/mx-chain-core-go
+
+replace github.com/multiversx/mx-chain-go => ../NewArc/Fixes/mx-chain-go
+
+replace github.com/multiversx/mx-chain-vm-common-go => ../NewArc/Fixes/mx-chain-vm-common-go
+
+replace github.com/multiversx/mx-chain-vm-go => ../NewArc/Fixes/mx-chain-vm-go
+
+replace github.com/multiversx/mx-chain-storage-go => ../NewArc/Fixes/mx-chain-storage-go
+
+replace github.com/multiversx/mx-chain-communication-go => ../NewArc/Fixes/mx-chain-communication-go
+
+replace github.com/multiversx/mx-chain-crypto-go => ../NewArc/Fixes/mx-chain-crypto-go
+
+replace github.com/multiversx/mx-chain-es-indexer-go => ../NewArc/Fixes/mx-chain-es-indexer-go
+
+replace github.com/multiversx/mx-chain-logger-go => ../NewArc/Fixes/mx-chain-logger-go
+
+replace github.com/multiversx/mx-chain-scenario-go => ../NewArc/Fixes/mx-chain-scenario-go

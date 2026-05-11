@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/multiversx/mx-chain-core-go/core"
 	"github.com/multiversx/mx-chain-core-go/core/check"
@@ -30,6 +31,15 @@ var errPendingTransaction = errors.New("something went wrong, transaction is sti
 type simulatorFacade struct {
 	simulator          SimulatorHandler
 	transactionHandler ProxyTransactionsHandler
+
+	// mutMutating serialises every endpoint that mutates the underlying
+	// simulator (block generation, state writes, validator-key
+	// management, forced epoch transitions). The simulator handler's
+	// own thread-safety is not documented as guaranteed; concurrent
+	// HTTP requests to two of these endpoints would otherwise race on
+	// the same handler. Read-only endpoints (queries, status) remain
+	// unsynchronised.
+	mutMutating sync.Mutex
 }
 
 // NewSimulatorFacade will create a new instance of simulatorFacade
@@ -52,6 +62,8 @@ func (sf *simulatorFacade) GenerateBlocks(numOfBlocks int) error {
 	if numOfBlocks <= 0 {
 		return errInvalidNumOfBlocks
 	}
+	sf.mutMutating.Lock()
+	defer sf.mutMutating.Unlock()
 	return sf.simulator.GenerateBlocks(numOfBlocks)
 }
 
@@ -62,6 +74,8 @@ func (sf *simulatorFacade) GetInitialWalletKeys() *dtos.InitialWalletKeys {
 
 // SetKeyValueForAddress will set the provided state for an address
 func (sf *simulatorFacade) SetKeyValueForAddress(address string, keyValueMap map[string]string) error {
+	sf.mutMutating.Lock()
+	defer sf.mutMutating.Unlock()
 	return sf.simulator.SetKeyValueForAddress(address, keyValueMap)
 }
 
@@ -70,6 +84,9 @@ func (sf *simulatorFacade) SetStateMultiple(stateSlice []*dtos.AddressState, noG
 	if len(stateSlice) > 1024 {
 		return errors.New("too many state entries")
 	}
+	sf.mutMutating.Lock()
+	defer sf.mutMutating.Unlock()
+
 	err := sf.simulator.SetStateMultiple(stateSlice)
 	if err != nil {
 		return err
@@ -87,6 +104,9 @@ func (sf *simulatorFacade) SetStateMultipleOverwrite(stateSlice []*dtos.AddressS
 	if len(stateSlice) > 1024 {
 		return errors.New("too many state entries")
 	}
+	sf.mutMutating.Lock()
+	defer sf.mutMutating.Unlock()
+
 	for _, state := range stateSlice {
 		// TODO MX-15414
 		err := sf.simulator.RemoveAccounts([]string{state.Address})
@@ -128,21 +148,30 @@ func (sf *simulatorFacade) AddValidatorKeys(validators *dtoc.ValidatorKeys) erro
 		validatorsPrivateKeys = append(validatorsPrivateKeys, privateKeyBytes)
 	}
 
+	sf.mutMutating.Lock()
+	defer sf.mutMutating.Unlock()
 	return sf.simulator.AddValidatorKeys(validatorsPrivateKeys)
 }
 
 // GenerateBlocksUntilEpochIsReached will generate as many blocks are required until the target epoch is reached
 func (sf *simulatorFacade) GenerateBlocksUntilEpochIsReached(targetEpoch int32) error {
+	sf.mutMutating.Lock()
+	defer sf.mutMutating.Unlock()
 	return sf.simulator.GenerateBlocksUntilEpochIsReached(targetEpoch)
 }
 
 // ForceUpdateValidatorStatistics will force the reset of the cache used for the validators statistics endpoint
 func (sf *simulatorFacade) ForceUpdateValidatorStatistics() error {
+	sf.mutMutating.Lock()
+	defer sf.mutMutating.Unlock()
 	return sf.simulator.ForceResetValidatorStatisticsCache()
 }
 
 // ForceChangeOfEpoch will force change the current epoch
 func (sf *simulatorFacade) ForceChangeOfEpoch(targetEpoch uint32) error {
+	sf.mutMutating.Lock()
+	defer sf.mutMutating.Unlock()
+
 	if targetEpoch == 0 {
 		return sf.simulator.ForceChangeOfEpoch()
 	}

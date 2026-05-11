@@ -207,6 +207,7 @@ func CreateProxy(args ArgsProxy) (*ArgsOutputProxy, error) {
 		args.Config.GeneralSettings.RateLimitWindowDurationSeconds,
 		false,
 		false,
+		simulatorCorsConfig(),
 	)
 	if err != nil {
 		return nil, err
@@ -231,6 +232,30 @@ func (p *proxy) Start() {
 // GetHttpServer will return the http server
 func (p *proxy) GetHttpServer() *http.Server {
 	return p.httpServer
+}
+
+// simulatorCorsConfig returns the CORS policy applied to the proxy
+// HTTP server when the simulator launches it.
+//
+// The simulator is a dev/test tool; browser-driven cross-origin
+// access to its API surface should be opt-in, not the default. The
+// previous behaviour inherited the proxy's cors.Default() which was
+// effectively "allow all origins with credentials" — a real
+// information-leak surface for any browser tab the operator visited
+// while the simulator was running.
+//
+// The empty AllowedOrigins below tells gin-contrib/cors to refuse
+// cross-origin browser requests. Operators who need cross-origin
+// access (e.g. a local dApp dev loop) should configure their browser
+// to skip CORS for the localhost simulator port, or wrap this with
+// an environment-driven config.
+func simulatorCorsConfig() config.CorsConfig {
+	return config.CorsConfig{
+		AllowedOrigins:   nil,
+		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders:   []string{"Origin", "Content-Type", "Accept"},
+		AllowCredentials: false,
+	}
 }
 
 // Close will close the proxy
