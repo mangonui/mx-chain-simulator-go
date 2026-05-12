@@ -219,7 +219,7 @@ replace github.com/multiversx/mx-chain-proxy-go => github.com/mangonui/mx-chain-
 // the core-go it consumes; both must therefore come from mangonui.
 replace github.com/multiversx/mx-chain-core-go => github.com/mangonui/mx-chain-core-go v0.0.0-20260511065402-576e93c1a0dc
 
-replace github.com/multiversx/mx-chain-go => github.com/mangonui/mx-chain-go v0.0.0-20260512042348-0cf0b4033bcd
+replace github.com/multiversx/mx-chain-go => github.com/mangonui/mx-chain-go v0.0.0-20260512054937-57f4dadcc488
 
 replace github.com/multiversx/mx-chain-vm-common-go => github.com/mangonui/mx-chain-vm-common-go v0.0.0-20260512030017-389a7968d8e1
 
