@@ -210,14 +210,14 @@ require (
 // CorsConfig type before that proxy commit is published to mangonui.
 // Once the proxy commit is pushed we will replace this with a
 // pseudo-version pin pointing at the mangonui SHA.
-replace github.com/multiversx/mx-chain-proxy-go => github.com/mangonui/mx-chain-proxy-go v0.0.0-20260512042348-35a8401ff816
+replace github.com/multiversx/mx-chain-proxy-go => github.com/mangonui/mx-chain-proxy-go v0.0.0-20260512154528-67a2d4e1802a
 
 // Pin every transitive multiversx dep to the mangonui audit-fix
 // branches so the entire build aligns on the DRWA-aware fork. The
 // proxy imports github.com/multiversx/mx-chain-core-go/data/drwa
 // which only exists on mangonui; mx-chain-go's API shape must match
 // the core-go it consumes; both must therefore come from mangonui.
-replace github.com/multiversx/mx-chain-core-go => github.com/mangonui/mx-chain-core-go v0.0.0-20260511065402-576e93c1a0dc
+replace github.com/multiversx/mx-chain-core-go => github.com/mangonui/mx-chain-core-go v0.0.0-20260512153159-d696dc43bf6d
 
 replace github.com/multiversx/mx-chain-go => github.com/mangonui/mx-chain-go v0.0.0-20260512054937-57f4dadcc488
 
@@ -231,7 +231,7 @@ replace github.com/multiversx/mx-chain-communication-go => github.com/mangonui/m
 
 replace github.com/multiversx/mx-chain-crypto-go => github.com/mangonui/mx-chain-crypto-go v0.0.0-20260512030017-a31166232fc6
 
-replace github.com/multiversx/mx-chain-es-indexer-go => github.com/mangonui/mx-chain-es-indexer-go v0.0.0-20260512030111-3c4acd56efcd
+replace github.com/multiversx/mx-chain-es-indexer-go => github.com/mangonui/mx-chain-es-indexer-go v0.0.0-20260512154259-fed32aa38c74
 
 replace github.com/multiversx/mx-chain-logger-go => github.com/mangonui/mx-chain-logger-go v0.0.0-20260512025801-4b00900c17b0
 
