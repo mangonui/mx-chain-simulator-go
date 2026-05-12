@@ -378,8 +378,8 @@ github.com/mangonui/mx-chain-vm-v1_2-go v0.0.0-20250717145621-f33bb0946d27 h1:Jy
 github.com/mangonui/mx-chain-vm-v1_2-go v0.0.0-20250717145621-f33bb0946d27/go.mod h1:Qqn+B6IBlOi5huybKlvqNYDMsAHognVI6a6uiSZvaj0=
 github.com/mangonui/mx-chain-vm-v1_3-go v0.0.0-20250718065436-cea78aa9a5e5 h1:HvJaf45RZAFtJhAIsTPUAfvkGxS9NrqFJMt1zUJ6Ez4=
 github.com/mangonui/mx-chain-vm-v1_3-go v0.0.0-20250718065436-cea78aa9a5e5/go.mod h1:tJahRJl5i+O0uT19lTeWPou5zSeVvQldSjp3wxXCpMA=
-github.com/mangonui/mx-chain-vm-v1_4-go v0.0.0-20250718065447-c52a57b65db5 h1:NcfldthBpZYtRTzOy9TruSdxeieng5iGzd/i+Il9ojo=
-github.com/mangonui/mx-chain-vm-v1_4-go v0.0.0-20250718065447-c52a57b65db5/go.mod h1:Z2cSyVE36NN7rYL2mGaP7yE6plzh5iIzis6HbyXSEFo=
+github.com/mangonui/mx-chain-vm-v1_4-go v0.0.0-20260512054805-aadb0dd733db h1:W4QnhniFBBnJ2GaEsH0M5IY2U5ktfdqsKZHrtZkue64=
+github.com/mangonui/mx-chain-vm-v1_4-go v0.0.0-20260512054805-aadb0dd733db/go.mod h1:EBv0Rm2Ogb3ku3TePruFeoh/dS0jlP0mIsMYLhzEDzU=
 github.com/mangonui/mx-components-big-int v0.0.0-20260507133911-536f4799b94f h1:CDPNmCJzuznxZd0cPOLOeHvEoQ5X3uDTkJ4OHJ100hA=
 github.com/mangonui/mx-components-big-int v0.0.0-20260507133911-536f4799b94f/go.mod h1:kcWw7hDe6cSz1wcBAqj/6sFH6ouSPsNeH9P7XlpZRcw=
 github.com/marten-seemann/tcp v0.0.0-20210406111302-dfbc87cc63fd h1:br0buuQ854V8u83wA0rVZ8ttrq5CpaPZdvrK0LP2lOk=
