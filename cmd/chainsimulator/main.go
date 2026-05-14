@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"os/signal"
 	"runtime/debug"
@@ -84,6 +85,8 @@ func main() {
 		skipConfigsDownload,
 		fetchConfigsAndClose,
 		pathWhereToSaveLogs,
+		restApiInterface,
+		unsafeAllowPublicBind,
 	}
 
 	app.Authors = []cli.Author{
@@ -161,7 +164,43 @@ func startChainSimulator(ctx *cli.Context) error {
 		return errors.New("invalid value for the number of waiting validators for metachain")
 	}
 
-	localRestApiInterface := "localhost"
+	// ISSUE-004: read the bind host from a CLI flag (default "localhost")
+	// and refuse non-loopback values unless the operator passed
+	// --unsafe-allow-public-bind. The simulator has NO authentication on
+	// its mutating endpoints; a non-loopback bind would expose
+	// generate-blocks / set-state / add-keys / force-epoch-change to the
+	// network. The check below catches that misconfiguration at startup.
+	localRestApiInterface := ctx.GlobalString(restApiInterface.Name)
+	allowPublicBind := ctx.GlobalBool(unsafeAllowPublicBind.Name)
+	if !isLoopbackBindHost(localRestApiInterface) {
+		if !allowPublicBind {
+			return fmt.Errorf(
+				"refusing to bind simulator REST API to non-loopback host %q without --unsafe-allow-public-bind; "+
+					"the simulator has no authentication and exposes state-mutating endpoints",
+				localRestApiInterface,
+			)
+		}
+		// ISSUE-004 layer 2: when public bind is explicitly authorized,
+		// require the auth token env var to be set. Public-bind +
+		// no-token is the dangerous combination the bind-safety check
+		// alone cannot prevent (the operator already opted into public
+		// bind), and the auth middleware would silently no-op without
+		// the env var. Refuse to start; force the operator to set
+		// MX_CHAIN_SIMULATOR_AUTH_TOKEN before exposing the API.
+		if !endpoints.IsSimulatorAuthEnabled() {
+			return fmt.Errorf(
+				"refusing to bind simulator REST API to non-loopback host %q without an auth token; "+
+					"set the %s environment variable to a long random secret before exposing the API "+
+					"(--unsafe-allow-public-bind acknowledges public exposure but does not waive auth)",
+				localRestApiInterface, endpoints.SimulatorAuthTokenEnv,
+			)
+		}
+		log.Warn("simulator REST API bound to a non-loopback host; auth token enforced on mutating endpoints",
+			"host", localRestApiInterface,
+			"auth_env_var", endpoints.SimulatorAuthTokenEnv)
+	} else if endpoints.IsSimulatorAuthEnabled() {
+		log.Info("simulator REST API auth token configured; mutating endpoints require Authorization: Bearer <token>")
+	}
 	apiConfigurator := api.NewFreePortAPIConfigurator(localRestApiInterface)
 	startTimeUnix := ctx.GlobalInt64(startTime.Name)
 
@@ -365,6 +404,29 @@ func loadMainConfig(filepath string) (config.Config, error) {
 	err := core.LoadTomlFile(&cfg, filepath)
 
 	return cfg, err
+}
+
+// isLoopbackBindHost reports whether the given hostname binds the
+// simulator REST API to a loopback address only. "localhost", "127.0.0.1",
+// "::1" and any other IP whose .IsLoopback() returns true qualify. An
+// empty hostname is treated as NOT loopback because gin's
+// `engine.Run("")` would bind to all interfaces. See issues/ISSUE-004.
+func isLoopbackBindHost(host string) bool {
+	if host == "" {
+		return false
+	}
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		// Non-empty hostname that isn't "localhost" and doesn't parse as
+		// an IP — assume non-loopback. Operators who really want to
+		// custom-bind to a hostname that resolves to loopback should
+		// pass --unsafe-allow-public-bind and accept the warning.
+		return false
+	}
+	return ip.IsLoopback()
 }
 
 func determineOverrideConfigFiles(ctx *cli.Context) []string {

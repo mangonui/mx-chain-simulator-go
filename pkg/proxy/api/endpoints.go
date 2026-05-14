@@ -7,9 +7,10 @@ import (
 	"net/url"
 	"strconv"
 	"sync/atomic"
+	"time"
 
-	"github.com/btcsuite/websocket"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	"github.com/multiversx/mx-chain-core-go/marshal"
 	"github.com/multiversx/mx-chain-go/api/logs"
 	"github.com/multiversx/mx-chain-go/node/chainSimulator/dtos"
@@ -65,6 +66,17 @@ func (ep *endpointsProcessor) ExtendProxyServer(httpServer *http.Server) error {
 		return errors.New("cannot cast httpServer.Handler to gin.Engine")
 	}
 
+	// ISSUE-004 layer 2: opt-in Bearer-token auth on every endpoint.
+	// No-op when MX_CHAIN_SIMULATOR_AUTH_TOKEN is unset/empty (preserves
+	// the historical zero-auth behavior so existing dev/CI workflows that
+	// rely on loopback-bind safety continue to work). When set, the
+	// middleware gates every method on every route registered against
+	// this engine — including GET /simulator/initial-wallets, which
+	// returns WalletKey.PrivateKeyHex and therefore must NOT be exempt
+	// (regression closure: the previous "safe-method exemption" leaked
+	// initial wallet keys to any unauthenticated caller).
+	ws.Use(newAuthMiddleware())
+
 	ws.POST(generateBlocksEndpoint, ep.generateBlocks)
 	ws.POST(generateBlocksUntilEpochReached, ep.generateBlocksUntilEpochReached)
 	ws.POST(generateBlocksUntilTransactionProcessed, ep.generateBlocksUntilTransactionProcessed)
@@ -85,7 +97,17 @@ func (ep *endpointsProcessor) ExtendProxyServer(httpServer *http.Server) error {
 
 // registerLoggerWsRoute will register the log route
 func registerLoggerWsRoute(ws *gin.Engine, serializer marshal.Marshalizer) {
-	upgrader := websocket.Upgrader{}
+	// ISSUE-029: migrated from github.com/btcsuite/websocket to
+	// github.com/gorilla/websocket so the whole stack uses the same
+	// WebSocket implementation (gorilla is what notifier and chain-go
+	// already use). Same API, fewer parser quirks to track. Also build
+	// the upgrader ONCE with HandshakeTimeout + the strict origin check
+	// (the previous code re-assigned CheckOrigin inside the handler on
+	// every connection, which works but is wasteful).
+	upgrader := websocket.Upgrader{
+		HandshakeTimeout: 10 * time.Second,
+		CheckOrigin:      isAllowedWebSocketOrigin,
+	}
 
 	ws.GET("/log", func(c *gin.Context) {
 		if atomic.AddInt32(&activeLogStreams, 1) > maxLogStreams {
@@ -94,8 +116,6 @@ func registerLoggerWsRoute(ws *gin.Engine, serializer marshal.Marshalizer) {
 			return
 		}
 		defer atomic.AddInt32(&activeLogStreams, -1)
-
-		upgrader.CheckOrigin = isAllowedWebSocketOrigin
 
 		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
@@ -232,6 +252,14 @@ func (ep *endpointsProcessor) setKeyValue(c *gin.Context) {
 		return
 	}
 
+	// ISSUE-018: gate body size before ShouldBindJSON. Sibling mutators
+	// (setStateMultiple, setStateMultipleOverwrite, addValidatorKeys)
+	// all do this; setKeyValue used to skip it, letting a multi-GiB POST
+	// drain memory inside the JSON parser.
+	if !limitRequestBody(c) {
+		return
+	}
+
 	var keyValueMap = map[string]string{}
 	err := c.ShouldBindJSON(&keyValueMap)
 	if err != nil {
@@ -278,9 +306,14 @@ func getMaxNumBlocksToGenerate(c *gin.Context) (int, error) {
 }
 
 func isAllowedWebSocketOrigin(r *http.Request) bool {
+	// ISSUE-029: previously empty Origin was accepted unconditionally,
+	// allowing non-browser clients without browser CSRF protection.
+	// Reject empty Origin: simulator /log is loopback-only by default
+	// (cmd/chainsimulator/main.go:164) and any local consumer can set
+	// a same-host Origin header trivially.
 	origin := r.Header.Get("Origin")
 	if origin == "" {
-		return true
+		return false
 	}
 
 	parsedOrigin, err := url.Parse(origin)

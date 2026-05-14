@@ -84,11 +84,15 @@ func TestGetTargetEpochQueryParamAllowsCallerToRejectNegative(t *testing.T) {
 func TestIsAllowedWebSocketOrigin(t *testing.T) {
 	t.Parallel()
 
-	t.Run("missing origin should work for non-browser clients", func(t *testing.T) {
+	t.Run("missing origin should be rejected (ISSUE-029)", func(t *testing.T) {
 		t.Parallel()
 
+		// Updated for ISSUE-029: empty Origin used to be accepted to support
+		// non-browser clients, but that disables browser CSRF protection
+		// without offering any real flexibility — any local consumer can
+		// set Origin: http://127.0.0.1 trivially. Reject empty Origin.
 		request := httptest.NewRequest(http.MethodGet, "http://127.0.0.1/log", nil)
-		require.True(t, isAllowedWebSocketOrigin(request))
+		require.False(t, isAllowedWebSocketOrigin(request))
 	})
 
 	t.Run("same host origin should work", func(t *testing.T) {

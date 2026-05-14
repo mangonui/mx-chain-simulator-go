@@ -137,6 +137,30 @@ var (
 		Name:  "fetch-configs-and-close",
 		Usage: "This flag is used to specify to fetch all configs and close the chain simulator after",
 	}
+	// ISSUE-004: bind-safety controls.
+	//
+	// The simulator exposes a number of state-mutating endpoints (set-state,
+	// add-keys, force-epoch-change, generate-blocks, ...) with no auth.
+	// Default deployment is loopback-only ("localhost"), which is safe because
+	// only same-host processes can reach the listener. The two flags below
+	// make that posture explicit AND make it hard to accidentally drop:
+	//
+	//   --rest-api-interface=<host> — override the bind hostname (defaults to
+	//   "localhost"; was previously hardcoded).
+	//
+	//   --unsafe-allow-public-bind — required acknowledgement before binding
+	//   to a non-loopback hostname. Without it, the simulator refuses to
+	//   start with a non-loopback interface. With it, a loud Warn is logged
+	//   so the public exposure is auditable in the startup logs.
+	restApiInterface = cli.StringFlag{
+		Name:  "rest-api-interface",
+		Usage: "Hostname to bind the simulator REST API to (default: localhost). Non-loopback values require --unsafe-allow-public-bind.",
+		Value: "localhost",
+	}
+	unsafeAllowPublicBind = cli.BoolFlag{
+		Name:  "unsafe-allow-public-bind",
+		Usage: "Required acknowledgement before binding the simulator REST API to a non-loopback hostname. The simulator has NO authentication on mutating endpoints; only set this in a hardened, networked-isolated environment.",
+	}
 )
 
 func applyFlags(ctx *cli.Context, cfg *config.Config) {
