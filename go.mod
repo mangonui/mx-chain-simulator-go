@@ -222,7 +222,7 @@ replace github.com/multiversx/mx-chain-go => github.com/mangonui/mx-chain-go v0.
 
 replace github.com/multiversx/mx-chain-vm-common-go => github.com/mangonui/mx-chain-vm-common-go v0.0.0-20260512030017-389a7968d8e1
 
-replace github.com/multiversx/mx-chain-vm-go => github.com/mangonui/mx-chain-vm-go v0.0.2-0.20260520094543-dc1a7442c47f
+replace github.com/multiversx/mx-chain-vm-go => github.com/mangonui/mx-chain-vm-go v0.0.2-0.20260520104551-e053edc7a42d
 
 replace github.com/multiversx/mx-chain-storage-go => github.com/mangonui/mx-chain-storage-go v0.0.0-20260514040357-ab466093f27c
 
