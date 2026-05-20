@@ -209,7 +209,7 @@ require (
 // CorsConfig type before that proxy commit is published to mangonui.
 // Once the proxy commit is pushed we will replace this with a
 // pseudo-version pin pointing at the mangonui SHA.
-replace github.com/multiversx/mx-chain-proxy-go => github.com/mangonui/mx-chain-proxy-go v0.0.0-20260514042443-4ff65dc8644d
+replace github.com/multiversx/mx-chain-proxy-go => github.com/mangonui/mx-chain-proxy-go v0.0.0-20260520112348-7458190ecb14
 
 // Pin every transitive multiversx dep to the mangonui audit-fix
 // branches so the entire build aligns on the DRWA-aware fork. The

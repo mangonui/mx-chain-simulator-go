@@ -256,11 +256,11 @@ func (p *proxy) GetHttpServer() *http.Server {
 // information-leak surface for any browser tab the operator visited
 // while the simulator was running.
 //
-// The empty AllowedOrigins below tells gin-contrib/cors to refuse
-// cross-origin browser requests. Operators who need cross-origin
-// access (e.g. a local dApp dev loop) should configure their browser
-// to skip CORS for the localhost simulator port, or wrap this with
-// an environment-driven config.
+// The empty AllowedOrigins below tells the proxy server to skip CORS
+// middleware registration, which means no cross-origin response
+// headers are emitted by default. Operators who need cross-origin
+// access (e.g. a local dApp dev loop) should wrap this with an
+// environment-driven config.
 func simulatorCorsConfig() config.CorsConfig {
 	return config.CorsConfig{
 		AllowedOrigins:   nil,
