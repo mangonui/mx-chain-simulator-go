@@ -209,20 +209,20 @@ require (
 // CorsConfig type before that proxy commit is published to mangonui.
 // Once the proxy commit is pushed we will replace this with a
 // pseudo-version pin pointing at the mangonui SHA.
-replace github.com/multiversx/mx-chain-proxy-go => github.com/mangonui/mx-chain-proxy-go v0.0.0-20260521074017-fd795067f82b
+replace github.com/multiversx/mx-chain-proxy-go => github.com/mangonui/mx-chain-proxy-go v0.0.0-20260521134342-970139f1563e
 
 // Pin every transitive multiversx dep to the mangonui audit-fix
 // branches so the entire build aligns on the DRWA-aware fork. The
 // proxy imports github.com/multiversx/mx-chain-core-go/data/drwa
 // which only exists on mangonui; mx-chain-go's API shape must match
 // the core-go it consumes; both must therefore come from mangonui.
-replace github.com/multiversx/mx-chain-core-go => github.com/mangonui/mx-chain-core-go v0.0.0-20260514035830-0e3a1d482b18
+replace github.com/multiversx/mx-chain-core-go => github.com/mangonui/mx-chain-core-go v0.0.0-20260521130659-cc9b460beb60
 
-replace github.com/multiversx/mx-chain-go => github.com/mangonui/mx-chain-go v0.0.0-20260521074017-e80d6d9c9730
+replace github.com/multiversx/mx-chain-go => github.com/mangonui/mx-chain-go v0.0.0-20260521141347-0bae467b5f7f
 
 replace github.com/multiversx/mx-chain-vm-common-go => github.com/mangonui/mx-chain-vm-common-go v0.0.0-20260521073214-bfcbe2da66a4
 
-replace github.com/multiversx/mx-chain-vm-go => github.com/mangonui/mx-chain-vm-go v0.0.0-20260521073710-7cda3018912d
+replace github.com/multiversx/mx-chain-vm-go => github.com/mangonui/mx-chain-vm-go v0.0.0-20260521141254-9c22269a5bf9
 
 replace github.com/multiversx/mx-chain-storage-go => github.com/mangonui/mx-chain-storage-go v0.0.0-20260514040357-ab466093f27c
 
@@ -230,17 +230,17 @@ replace github.com/multiversx/mx-chain-communication-go => github.com/mangonui/m
 
 replace github.com/multiversx/mx-chain-crypto-go => github.com/mangonui/mx-chain-crypto-go v0.0.0-20260521050229-0071ade87e85
 
-replace github.com/multiversx/mx-chain-es-indexer-go => github.com/mangonui/mx-chain-es-indexer-go v0.0.0-20260521073819-6df256e31143
+replace github.com/multiversx/mx-chain-es-indexer-go => github.com/mangonui/mx-chain-es-indexer-go v0.0.0-20260521134216-4761bf975b5c
 
 replace github.com/multiversx/mx-chain-logger-go => github.com/mangonui/mx-chain-logger-go v0.0.0-20260514040119-0a9c9ca2e4eb
 
 replace github.com/multiversx/mx-chain-scenario-go => github.com/mangonui/mx-chain-scenario-go v0.0.0-20260521073255-89bc1d0b5adf
 
-replace github.com/multiversx/mx-chain-vm-v1_2-go => github.com/mangonui/mx-chain-vm-v1_2-go v0.0.0-20260521073710-c201343f4d53
+replace github.com/multiversx/mx-chain-vm-v1_2-go => github.com/mangonui/mx-chain-vm-v1_2-go v0.0.0-20260521141243-70f61858062e
 
-replace github.com/multiversx/mx-chain-vm-v1_3-go => github.com/mangonui/mx-chain-vm-v1_3-go v0.0.0-20260521073710-71e005141798
+replace github.com/multiversx/mx-chain-vm-v1_3-go => github.com/mangonui/mx-chain-vm-v1_3-go v0.0.0-20260521141247-1f9032283a2d
 
-replace github.com/multiversx/mx-chain-vm-v1_4-go => github.com/mangonui/mx-chain-vm-v1_4-go v0.0.0-20260521073710-1afd783b3ccb
+replace github.com/multiversx/mx-chain-vm-v1_4-go => github.com/mangonui/mx-chain-vm-v1_4-go v0.0.0-20260521141250-c748bf7b4c13
 
 replace github.com/multiversx/mx-components-big-int => github.com/mangonui/mx-components-big-int v0.0.0-20260507133911-536f4799b94f
 
